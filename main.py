@@ -21,15 +21,15 @@ group by a.id
 order by avg(duration);''').fetchall()
 print(avg_tracks)
 
-albums_2020 = connection.execute('''select name_of_the_artist from artists 
-where name_of_the_artist not in 
+albums_2020 = connection.execute('''select name_of_the_artist from artists
+where name_of_the_artist not in
 (select name_of_the_artist from artists a left join artists_album aa on a.id = aa.artists_id
-left join albums al on aa.album_id = al.id 
+left join albums al on aa.album_id = al.id
 where year_of_release = 2020);''').fetchall()
 print(albums_2020)
 
 artists_collection = connection.execute('''select name_colletion from collection
-where name_colletion in 
+where name_colletion in
 (select name_colletion from collection c left join track_collection tc on c.id = tc.collection_id
 left join tracks t on tc.track_id = t.id
 left join albums a on t.id = a.id
@@ -47,24 +47,25 @@ group by a.album_name
 having count(name_of_the_genre) >1;''').fetchall()
 print(artists_genre)
 
-track_not_in = connection.execute('''select track_name from tracks
-where track_name not in
-(select track_name from tracks t join track_collection tc on t.id = tc.track_id);''').fetchall()
+track_not_in = connection.execute('''select track_name from tracks t 
+left join track_collection tc on t.id = tc.track_id
+where tc.collection_id is NULL;''').fetchall()
 print(track_not_in)
 
 short_tracks = connection.execute('''select name_of_the_artist, track_name, duration from tracks t
-left join albums al on t.id = al.id
+left join albums al on t.album_id = al.id
 left join artists_album aa on al.id = aa.album_id
 left join artists a on aa.artists_id = a.id
 group by a.name_of_the_artist, t.track_name, t.duration
 having duration = (select min(duration) from tracks);''').fetchall()
 print(short_tracks)
 
-albums_tracks = connection.execute('''select album_name from albums a
-left join tracks t on a.id = t.album_id
-where album_id in
-(select album_id from tracks group by album_id having count(id) = (select count(id) from tracks 
-group by album_id
-order by count
-limit 1));''').fetchall()
+albums_tracks = connection.execute('''select album_name, COUNT(track_name) from albums a
+join tracks t on a.id = t.album_id
+group by album_name
+having count(track_name) = (select count(track_name) from albums a
+join tracks t on a.id = t.album_id
+group by album_name
+order by count(track_name)
+limit 1);''').fetchall()
 print(albums_tracks)
